@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>O que será que é isso?</title>
+  <!-- Fonte clássica -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body, html {
+      width:100%; height:100%;
+      font-family:'Playfair Display', serif;
+      background:#111;
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden;
+    }
+    /* Container do livro */
+    #book {
+      position:relative;
+      width:90vw; max-width:500px;
+      height:80vh; max-height:700px;
+      perspective:1200px;
+      transition:transform .8s ease;
+    }
+    /* Progresso */
+    #progress {
+      position:absolute; bottom:10px; right:20px;
+      color:rgba(255,255,255,.7);
+      font-size:.9rem;
+      z-index:10;
+    }
+    /* Todas as páginas */
+    .page {
+      position:absolute; top:0; left:0;
+      width:100%; height:100%;
+      background:#faf0e6; color:#111;
+      border-radius:8px;
+      box-shadow:0 8px 20px rgba(0,0,0,.5);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:20px;
+      backface-visibility:hidden;
+      transform: rotateY(180deg);
+      opacity:0;
+      transition:opacity .8s ease, transform .8s ease;
+    }
+    .page.active {
+      transform: rotateY(0deg);
+      opacity:1;
+    }
+    /* Capa */
+    #cover {
+      position:relative;
+      width:100%; height:100%;
+      background:linear-gradient(135deg,#8b0000,#5a0000);
+      color:#fff;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      cursor:pointer;
+      transform-origin:left center;
+      backface-visibility:hidden;
+      transition:transform 1s ease;
+      z-index:5;
+    }
+    #cover h1 {
+      font-size:2.8rem; letter-spacing:4px;
+      animation:fadeIn 1s ease forwards;
+    }
+    #cover small {
+      margin-top:10px; opacity:0;
+      animation:fadeIn 2s ease forwards 1s;
+    }
+    /* Botões */
+    .next-btn, #verFinal {
+      margin-top:20px;
+      padding:12px 24px;
+      background:#8b0000; color:#fff;
+      border:none; border-radius:20px;
+      font-size:1rem; cursor:pointer;
+      opacity:0; animation:fadeIn 1s ease forwards 1s;
+      transition:background .3s;
+    }
+    .next-btn:hover, #verFinal:hover {
+      background:#b22222;
+    }
+    /* Typewriter */
+    .typewriter {
+      font-size:1.1rem; line-height:1.6;
+      width:100%; max-width:90%;
+      white-space:pre-wrap; overflow:hidden;
+      border-right:.12em solid currentColor;
+      animation:typing 3s steps(40,end), blink-caret .75s step-end infinite;
+      text-align:center;
+    }
+    @keyframes typing { from{width:0} to{width:100%} }
+    @keyframes blink-caret { from,to{border-color:transparent} 50%{border-color:currentColor} }
+    /* Hover surpresa */
+    #hoverDest { color:#8b0000; cursor:pointer; transition:color .3s; }
+    #hoverDest:hover { color:#ff4d6d; }
+    /* Página 4 – foto */
+    #page4 img {
+      max-width:80%; border-radius:12px;
+      box-shadow:0 4px 12px rgba(0,0,0,.5);
+      animation:zoomIn 1s ease forwards .5s;
+    }
+    @keyframes zoomIn { from{transform:scale(.8);opacity:0} to{transform:scale(1);opacity:1} }
+    #page4 p {
+      margin-top:20px;
+      font-size:1.2rem; color:#8b0000; font-weight:700;
+      text-align:center;
+      opacity:0; animation:fadeIn 1s ease forwards 1s;
+    }
+    /* Mensagem final */
+    #final-message {
+      position:absolute; top:0; left:0;
+      width:100%; height:100%;
+      background:rgba(0,0,0,.8); color:#fff;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      text-align:center; font-size:1.3rem; padding:20px;
+      opacity:0; pointer-events:none; z-index:5;
+    }
+    /* Confete */
+    #confetti-canvas {
+      position:fixed; top:0; left:0;
+      width:100%; height:100%; pointer-events:none; z-index:4;
+    }
+    /* Animação fadeIn */
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    /* Responsivo */
+    @media (max-width:400px){
+      #cover h1{font-size:2rem;}
+      .next-btn, #verFinal{font-size:.9rem; padding:10px 20px;}
+      .typewriter, #page4 p, #final-message, #progress{font-size:1rem;}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Áudios -->
+  <audio id="bgMusic" loop>
+    <source src="music.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="flipSound">
+    <source src="flip.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Canvas confete e progresso -->
+  <canvas id="confetti-canvas"></canvas>
+  <div id="progress">0 / 4</div>
+
+  <div id="book">
+    <!-- Capa -->
+    <div id="cover">
+      <h1>Você ja esteve aqui?</h1>
+      <small>clique para abrir…</small>
+    </div>
+    <!-- Páginas -->
+    <div class="page" id="page1">
+      <div class="typewriter">
+Você encontrou este livro por acaso…  
+ou seria <span id="hoverDest">destino</span>?  
+Toque em “Próximo” para seguir.
+      </div>
+      <button class="next-btn" data-next="page2">Próximo ➔</button>
+    </div>
+    <div class="page" id="page2">
+      <div class="typewriter">
+Se vocêchegou até aqui… 
+Talvel.... so talvez.
+      </div>
+      <button class="next-btn" data-next="page3">Próximo ➔</button>
+    </div>
+    <div class="page" id="page3">
+      <div class="typewriter">
+Voce esteja preparada para surpresa 
+Está preparada, para a maior surpresa?
+      </div>
+      <button class="next-btn" data-next="page4">Próximo ➔</button>
+    </div>
+    <div class="page" id="page4">
+      <img src="yasmin-princesa.jpg" alt="Yasmin princesa">
+      <p>Yasmin, você é a princesa que a Disney não tem.</p>
+      <button id="verFinal">Ver o final ➔</button>
+    </div>
+    <!-- Mensagem final -->
+    <div id="final-message">
+      Sra. Yasmin, aceita sair comigo na sexta?
+    </div>
+  </div>
+
+  <script>
+    const cover = document.getElementById('cover'),
+          pages = ['page1','page2','page3','page4'],
+          bgMusic = document.getElementById('bgMusic'),
+          flip = document.getElementById('flipSound'),
+          progressEl = document.getElementById('progress');
+    let idx = -1, autoTimer;
+
+    // Inicia livro
+    function openBook() {
+      flip.play();
+      cover.style.transform = 'rotateY(-180deg)';
+      cover.removeEventListener('click', openBook);
+      cover.removeEventListener('touchstart', openBook);
+      setTimeout(() => showPage(0), 800);
+    }
+    cover.addEventListener('click', openBook);
+    cover.addEventListener('touchstart', openBook);
+
+    // Mostrar página e avançar
+    function showPage(i) {
+      clearTimeout(autoTimer);
+      idx = i;
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pages[i]).classList.add('active');
+      flip.play();
+      if (i < 3) autoTimer = setTimeout(() => showPage(i+1), 5000);
+    }
+
+    // Botões Próximo
+    document.querySelectorAll('.next-btn').forEach(btn => {
+      function go() {
+        clearTimeout(autoTimer);
+        const next = btn.dataset.next;
+        const ni = pages.indexOf(next);
+        if (ni > -1) showPage(ni);
+      }
+      btn.addEventListener('click', go);
+      btn.addEventListener('touchstart', go);
+    });
+
+    // Hover surpresa
+    const hd = document.getElementById('hoverDest');
+    hd.addEventListener('mouseenter', () => hd.textContent='sorte');
+    hd.addEventListener('mouseleave', () => hd.textContent='destino');
+    hd.addEventListener('touchstart', () => hd.textContent='sorte');
+
+    // Confete
+    const canvas = document.getElementById('confetti-canvas'),
+          ctx = canvas.getContext('2d');
+    let W, H, confettiArr = [];
+    function resize() { W=canvas.width=innerWidth; H=canvas.height=innerHeight; }
+    window.addEventListener('resize', resize); resize();
+    function initConf() {
+      confettiArr = [];
+      for (let j=0; j<150; j++) {
+        confettiArr.push({
+          x: Math.random()*W,
+          y: Math.random()*H - H,
+          r: Math.random()*4+2,
+          d: Math.random()*H,
+          tilt: Math.random()*10
+        });
+      }
+    }
+    function drawConf() {
+      ctx.clearRect(0,0,W,H);
+      confettiArr.forEach((c,k) => {
+        ctx.fillStyle = c.color;
+        ctx.fillRect(c.x+c.tilt, c.y, c.r, c.r*0.4);
+        c.y += Math.cos(c.d)+1+c.r/2;
+        c.x += Math.sin(c.d);
+        if (c.y>H) confettiArr[k].y = -10;
+      });
+      requestAnimationFrame(drawConf);
+    }
+    initConf(); drawConf();
+
+    // Ver o final
+    function finish() {
+      clearTimeout(autoTimer);
+      flip.play();
+      document.getElementById('book').style.transform = 'rotateY(0deg)';
+      setTimeout(() => {
+        const msg = document.getElementById('final-message');
+        msg.style.pointerEvents = 'auto';
+        msg.style.opacity = '1';
+      }, 800);
+    }
+    document.getElementById('verFinal').addEventListener('click', finish);
+    document.getElementById('verFinal').addEventListener('touchstart', finish);
+
+    // Tenta tocar música (depois de interação)
+    bgMusic.play().catch(()=>{});
+  </script>
+</body>
+</html>
